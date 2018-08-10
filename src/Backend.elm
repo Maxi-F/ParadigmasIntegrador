@@ -26,7 +26,10 @@ peliculaTienePalabrasClave palabras pelicula = contains "Toy" pelicula.title
 -- **************
 
 filtrarPeliculasPorGenero : String -> List Movie -> List Movie
-filtrarPeliculasPorGenero genero = completaAca
+filtrarPeliculasPorGenero genero = filter (esPeliculaDeGenero genero)
+
+esPeliculaDeGenero : String -> Movie -> Bool
+esPeliculaDeGenero genero pelicula = member genero pelicula.genre
 
 -- **************
 -- Requerimiento: filtrar las películas que sean aptas para menores de edad,

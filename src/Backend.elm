@@ -37,7 +37,10 @@ esPeliculaDeGenero genero pelicula = member genero pelicula.genre
 -- **************
 
 filtrarPeliculasPorMenoresDeEdad : Bool -> List Movie -> List Movie
-filtrarPeliculasPorMenoresDeEdad mostrarSoloMenores = completaAca
+filtrarPeliculasPorMenoresDeEdad mostrarSoloMenores peliculas = if mostrarSoloMenores then soloParaMenores peliculas else peliculas
+
+soloParaMenores : List Movie -> List Movie
+soloParaMenores = filter.forKids
 
 -- **************
 -- Requerimiento: ordenar las películas por su rating;

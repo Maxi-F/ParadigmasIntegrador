@@ -1,5 +1,7 @@
 module Backend exposing(..)
 import Models exposing(Movie, Preferences)
+import List exposing(filter, map, sortBy, member, foldr, reverse)
+import String exposing (contains, split)
 
 completaAca = identity
 
@@ -8,7 +10,7 @@ completaAca = identity
 -- **************
 
 filtrarPeliculasPorPalabrasClave : String -> List Movie -> List Movie
-filtrarPeliculasPorPalabrasClave palabras = List.filter (peliculaTienePalabrasClave palabras)
+filtrarPeliculasPorPalabrasClave palabras = filter (peliculaTienePalabrasClave palabras)
 
 -- esta función la dejamos casi lista, pero tiene un pequeño bug. ¡Corregilo!
 --
@@ -17,7 +19,7 @@ filtrarPeliculasPorPalabrasClave palabras = List.filter (peliculaTienePalabrasCl
 -- * distingue mayúsculas de minúsculas, pero debería encontrar a "Lion King" aunque escriba "kINg"
 -- * busca una coincidencia exacta, pero si escribís "Avengers Ultron" debería encontrar a "Avengers: Age Of Ultron"
 --
-peliculaTienePalabrasClave palabras pelicula = String.contains "Toy" pelicula.title
+peliculaTienePalabrasClave palabras pelicula = contains "Toy" pelicula.title
 
 -- **************
 -- Requerimiento: visualizar las películas según el género elegido en un selector;
@@ -54,5 +56,33 @@ darLikeAPelicula id = completaAca
 --                mostrarlo junto a la misma;
 -- **************
 
+dividirPorEspacios : String -> List String
+dividirPorEspacios = split " "
+
+volverACalcular : Movie -> Movie
+volverACalcular pelicula = {pelicula | matchPercentage = 0}
+
+comparacionConPreferencia : Int -> List String -> String -> Movie -> Movie
+comparacionConPreferencia porcentaje listaAComparar preferencia pelicula = if (member preferencia listaAComparar) then { pelicula | matchPercentage = pelicula.matchPercentage + porcentaje }
+                                                                       else pelicula
+compararActor : Preferences -> Movie -> Movie
+compararActor preferencias pelicula = comparacionConPreferencia 50 pelicula.actors preferencias.favoriteActor pelicula
+
+compararGenero : Preferences -> Movie -> Movie
+compararGenero preferencias pelicula = comparacionConPreferencia 60 pelicula.genre preferencias.genre pelicula
+
+compararTitulo : Preferences -> Movie -> Movie
+compararTitulo preferencias pelicula = foldr (comparacionConPreferencia 20 (dividirPorEspacios pelicula.title)) pelicula (dividirPorEspacios preferencias.keywords)
+
+funcionDeAzul : Movie -> Movie
+funcionDeAzul pelicula = if pelicula.matchPercentage > 100 then {pelicula | matchPercentage = 100}
+                         else pelicula
+
+porcentajeDeCoincidencia : Preferences -> Movie -> Movie
+porcentajeDeCoincidencia preferencias = funcionDeAzul << (compararTitulo preferencias) << (compararGenero preferencias) << (compararActor preferencias)
+
+ordenarDescendientemente : (Movie -> Int) -> List Movie -> List Movie
+ordenarDescendientemente criterio = reverse << (sortBy criterio)
+
 calcularPorcentajeDeCoincidencia : Preferences -> List Movie -> List Movie
-calcularPorcentajeDeCoincidencia preferencias = completaAca
+calcularPorcentajeDeCoincidencia preferencias = (ordenarDescendientemente .matchPercentage) << (map ((porcentajeDeCoincidencia preferencias) << volverACalcular))

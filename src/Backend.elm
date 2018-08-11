@@ -73,7 +73,7 @@ filtrarPeliculasPorMenoresDeEdad mostrarSoloMenores peliculas = if mostrarSoloMe
                                                                 else peliculas
 
 soloParaMenores : List Movie -> List Movie
-soloParaMenores = filter << forKids
+soloParaMenores = filter << pelicula.forKids
 
 -- **************
 -- Requerimiento: ordenar las películas por su rating;

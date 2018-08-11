@@ -1,7 +1,7 @@
 module Backend exposing(..)
 import Models exposing(Movie, Preferences)
 import List exposing(filter, map, sortBy, member, foldr, reverse)
-import String exposing (contains, split)
+import String exposing (contains, split, toLower)
 
 completaAca = identity
 
@@ -37,10 +37,11 @@ esPeliculaDeGenero genero pelicula = member genero pelicula.genre
 -- **************
 
 filtrarPeliculasPorMenoresDeEdad : Bool -> List Movie -> List Movie
-filtrarPeliculasPorMenoresDeEdad mostrarSoloMenores peliculas = if mostrarSoloMenores then soloParaMenores peliculas else peliculas
+filtrarPeliculasPorMenoresDeEdad mostrarSoloMenores = completaAca
+--filtrarPeliculasPorMenoresDeEdad mostrarSoloMenores peliculas = if mostrarSoloMenores then soloParaMenores peliculas else peliculas
 
-soloParaMenores : List Movie -> List Movie
-soloParaMenores = filter.forKids
+--soloParaMenores : List Movie -> List Movie
+--soloParaMenores = filter.forKids
 
 -- **************
 -- Requerimiento: ordenar las películas por su rating;
@@ -53,8 +54,12 @@ ordenarPeliculasPorRating = completaAca
 -- Requerimiento: dar like a una película
 -- **************
 
+sumarLike : Int -> Movie -> Movie
+sumarLike id pelicula = if pelicula.id == id then { pelicula | likes = pelicula.likes + 1 }
+                        else pelicula
+
 darLikeAPelicula : Int -> List Movie -> List Movie
-darLikeAPelicula id = completaAca
+darLikeAPelicula id = map (sumarLike id)
 
 -- **************
 -- Requerimiento: cargar preferencias a través de un popup modal,
@@ -68,9 +73,12 @@ dividirPorEspacios = split " "
 volverACalcular : Movie -> Movie
 volverACalcular pelicula = {pelicula | matchPercentage = 0}
 
+pasarListaAMinusculas : List String -> List String
+pasarListaAMinusculas = map toLower
+
 comparacionConPreferencia : Int -> List String -> String -> Movie -> Movie
-comparacionConPreferencia porcentaje listaAComparar preferencia pelicula = if (member preferencia listaAComparar) then { pelicula | matchPercentage = pelicula.matchPercentage + porcentaje }
-                                                                       else pelicula
+comparacionConPreferencia porcentaje listaAComparar preferencia pelicula = if (member (toLower preferencia) (pasarListaAMinusculas listaAComparar)) then { pelicula | matchPercentage = pelicula.matchPercentage + porcentaje }
+                                                                           else pelicula
 compararActor : Preferences -> Movie -> Movie
 compararActor preferencias pelicula = comparacionConPreferencia 50 pelicula.actors preferencias.favoriteActor pelicula
 
@@ -80,12 +88,12 @@ compararGenero preferencias pelicula = comparacionConPreferencia 60 pelicula.gen
 compararTitulo : Preferences -> Movie -> Movie
 compararTitulo preferencias pelicula = foldr (comparacionConPreferencia 20 (dividirPorEspacios pelicula.title)) pelicula (dividirPorEspacios preferencias.keywords)
 
-funcionDeAzul : Movie -> Movie
-funcionDeAzul pelicula = if pelicula.matchPercentage > 100 then {pelicula | matchPercentage = 100}
+maximoCien : Movie -> Movie --ex funcionDeAzul :c
+maximoCien pelicula = if pelicula.matchPercentage > 100 then {pelicula | matchPercentage = 100}
                          else pelicula
 
 porcentajeDeCoincidencia : Preferences -> Movie -> Movie
-porcentajeDeCoincidencia preferencias = funcionDeAzul << (compararTitulo preferencias) << (compararGenero preferencias) << (compararActor preferencias)
+porcentajeDeCoincidencia preferencias = maximoCien << (compararTitulo preferencias) << (compararGenero preferencias) << (compararActor preferencias)
 
 ordenarDescendientemente : (Movie -> Int) -> List Movie -> List Movie
 ordenarDescendientemente criterio = reverse << (sortBy criterio)

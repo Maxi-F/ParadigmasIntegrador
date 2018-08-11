@@ -1,16 +1,37 @@
 module Backend exposing(..)
 import Models exposing(Movie, Preferences)
-import List exposing(filter, map, sortBy, member, foldr, reverse)
+import List exposing(filter, map, sortBy, member, foldr, reverse, any, all)
 import String exposing (contains, split, toLower)
 
 completaAca = identity
+
+abecedarioYNumeros = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+ordenarDescendientemente : (Movie -> comparable) -> List Movie -> List Movie
+ordenarDescendientemente criterio = reverse << (sortBy criterio)
+
+pasarPalabrasAMinusculas : List String -> List String
+pasarPalabrasAMinusculas = map toLower
+
+dividirPalabrasPorEspacios : String -> List String
+dividirPalabrasPorEspacios = split " "
+
+esLetraONumero : Char -> Bool
+esLetraONumero caracter = member caracter abecedarioYNumeros
+
+filtrarCaracteresEspeciales : List String -> List String
+filtrarCaracteresEspeciales = map (String.filter esLetraONumero)
+
+hacerComparable : String -> List String
+hacerComparable = filtrarCaracteresEspeciales << pasarPalabrasAMinusculas << dividirPalabrasPorEspacios
 
 -- **************
 -- Requerimiento: filtrar películas por su título a medida que se escribe en el buscador;
 -- **************
 
 filtrarPeliculasPorPalabrasClave : String -> List Movie -> List Movie
-filtrarPeliculasPorPalabrasClave palabras = filter (peliculaTienePalabrasClave palabras)
+filtrarPeliculasPorPalabrasClave palabras peliculas = if palabras /= "" then filter (peliculaTienePalabrasClave palabras) peliculas
+                                                      else peliculas
 
 -- esta función la dejamos casi lista, pero tiene un pequeño bug. ¡Corregilo!
 --
@@ -19,7 +40,18 @@ filtrarPeliculasPorPalabrasClave palabras = filter (peliculaTienePalabrasClave p
 -- * distingue mayúsculas de minúsculas, pero debería encontrar a "Lion King" aunque escriba "kINg"
 -- * busca una coincidencia exacta, pero si escribís "Avengers Ultron" debería encontrar a "Avengers: Age Of Ultron"
 --
-peliculaTienePalabrasClave palabras pelicula = contains "Toy" pelicula.title
+
+esCoincidenciaClave : String -> String -> Bool
+esCoincidenciaClave palabraDelTitulo palabra = if palabra /= "" then contains palabra palabraDelTitulo
+                                               else False
+--algunaEsPalabraClave : List String -> String -> Bool
+--algunaEsPalabraClave palabras palabraDelTitulo = any (esPalabraclave palabraDelTitulo) palabras
+
+sonPalabrasClave : List String -> String -> Bool
+sonPalabrasClave palabras palabraDelTitulo = any (esCoincidenciaClave palabraDelTitulo) palabras
+
+peliculaTienePalabrasClave : String -> Movie -> Bool
+peliculaTienePalabrasClave palabras pelicula = any (sonPalabrasClave (hacerComparable palabras)) (hacerComparable pelicula.title)
 
 -- **************
 -- Requerimiento: visualizar las películas según el género elegido en un selector;
@@ -37,18 +69,18 @@ esPeliculaDeGenero genero pelicula = member genero pelicula.genre
 -- **************
 
 filtrarPeliculasPorMenoresDeEdad : Bool -> List Movie -> List Movie
-filtrarPeliculasPorMenoresDeEdad mostrarSoloMenores = completaAca
---filtrarPeliculasPorMenoresDeEdad mostrarSoloMenores peliculas = if mostrarSoloMenores then soloParaMenores peliculas else peliculas
+filtrarPeliculasPorMenoresDeEdad mostrarSoloMenores peliculas = if mostrarSoloMenores then soloParaMenores peliculas
+                                                                else peliculas
 
---soloParaMenores : List Movie -> List Movie
---soloParaMenores = filter.forKids
+soloParaMenores : List Movie -> List Movie
+soloParaMenores = filter .forKids
 
 -- **************
 -- Requerimiento: ordenar las películas por su rating;
 -- **************
 
 ordenarPeliculasPorRating : List Movie -> List Movie
-ordenarPeliculasPorRating = completaAca
+ordenarPeliculasPorRating = ordenarDescendientemente .rating
 
 -- **************
 -- Requerimiento: dar like a una película
@@ -67,17 +99,11 @@ darLikeAPelicula id = map (sumarLike id)
 --                mostrarlo junto a la misma;
 -- **************
 
-dividirPorEspacios : String -> List String
-dividirPorEspacios = split " "
-
 volverACalcular : Movie -> Movie
 volverACalcular pelicula = {pelicula | matchPercentage = 0}
 
-pasarListaAMinusculas : List String -> List String
-pasarListaAMinusculas = map toLower
-
 comparacionConPreferencia : Int -> List String -> String -> Movie -> Movie
-comparacionConPreferencia porcentaje listaAComparar preferencia pelicula = if (member (toLower preferencia) (pasarListaAMinusculas listaAComparar)) then { pelicula | matchPercentage = pelicula.matchPercentage + porcentaje }
+comparacionConPreferencia porcentaje listaAComparar preferencia pelicula = if (member (toLower preferencia) (pasarPalabrasAMinusculas listaAComparar)) then { pelicula | matchPercentage = pelicula.matchPercentage + porcentaje }
                                                                            else pelicula
 compararActor : Preferences -> Movie -> Movie
 compararActor preferencias pelicula = comparacionConPreferencia 50 pelicula.actors preferencias.favoriteActor pelicula
@@ -86,7 +112,7 @@ compararGenero : Preferences -> Movie -> Movie
 compararGenero preferencias pelicula = comparacionConPreferencia 60 pelicula.genre preferencias.genre pelicula
 
 compararTitulo : Preferences -> Movie -> Movie
-compararTitulo preferencias pelicula = foldr (comparacionConPreferencia 20 (dividirPorEspacios pelicula.title)) pelicula (dividirPorEspacios preferencias.keywords)
+compararTitulo preferencias pelicula = foldr (comparacionConPreferencia 20 (dividirPalabrasPorEspacios pelicula.title)) pelicula (dividirPalabrasPorEspacios preferencias.keywords)
 
 maximoCien : Movie -> Movie --ex funcionDeAzul :c
 maximoCien pelicula = if pelicula.matchPercentage > 100 then {pelicula | matchPercentage = 100}
@@ -94,9 +120,6 @@ maximoCien pelicula = if pelicula.matchPercentage > 100 then {pelicula | matchPe
 
 porcentajeDeCoincidencia : Preferences -> Movie -> Movie
 porcentajeDeCoincidencia preferencias = maximoCien << (compararTitulo preferencias) << (compararGenero preferencias) << (compararActor preferencias)
-
-ordenarDescendientemente : (Movie -> Int) -> List Movie -> List Movie
-ordenarDescendientemente criterio = reverse << (sortBy criterio)
 
 calcularPorcentajeDeCoincidencia : Preferences -> List Movie -> List Movie
 calcularPorcentajeDeCoincidencia preferencias = (ordenarDescendientemente .matchPercentage) << (map ((porcentajeDeCoincidencia preferencias) << volverACalcular))

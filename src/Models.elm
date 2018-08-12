@@ -42,7 +42,7 @@ lionKing : Movie
 lionKing = {id= 3, poster= createPoster "./Assets/The_Lion_King.png", title= "Lion King", rating= 9.5, genre= ["Family", "Animated"], link= "https://www.youtube.com/watch?v=_ujGv5dhGfk", likes = 0, matchPercentage = 0, forKids = True, actors = ["Rowan Atkinson", "Matthew Broderick", "Niketa Calame-Harris", "Jeremy Irons", "James Earl Jones", "Nathan Lane", "Ernie Sabella"]}
 
 it : Movie
-it = {id= 4, poster= createPoster "./Assets/it_poster.png", title= "IT", rating= 8.0, genre= ["Horror"], link= "https://www.youtube.com/watch?v=hAUTdjf9rko", likes = 0, matchPercentage = 0, forKids = False, actors = ["Jaeden Lieberher", "Bill Skarsgård", "Wyatt Oleff", "Jeremy Ray Taylor", "Sophia Lillis", "Finn Wolfhard"]}
+it = {id= 4, poster= createPoster "./Assets/it_poster.png", title= "IT", rating= 8.0, genre= ["terror"], link= "https://www.youtube.com/watch?v=hAUTdjf9rko", likes = 0, matchPercentage = 0, forKids = False, actors = ["Jaeden Lieberher", "Bill Skarsgård", "Wyatt Oleff", "Jeremy Ray Taylor", "Sophia Lillis", "Finn Wolfhard"]}
 
 --POSTERS
 createPoster : String -> Image

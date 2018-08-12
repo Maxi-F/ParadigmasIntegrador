@@ -1,11 +1,16 @@
 module Backend exposing(..)
 import Models exposing(Movie, Preferences)
 import List exposing(filter, map, sortBy, member, foldr, reverse, any, all)
-import String exposing (contains, split, toLower)
+import String exposing (contains, split, toLower, join)
+import Tuple exposing (first, second)
 
 completaAca = identity
 
+abecedarioYNumeros : List Char
 abecedarioYNumeros = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+generosRelacionados : List (String, String)
+generosRelacionados = [("Action", "Adventure"), ("Action", "Superhero"), ("Suspense", "Terror"), ("Action", "Terror")]
 
 ordenarDescendientemente : (Movie -> comparable) -> List Movie -> List Movie
 ordenarDescendientemente criterio = reverse << (sortBy criterio)
@@ -26,7 +31,7 @@ hacerComparableComoLista : String -> List String
 hacerComparableComoLista = filtrarCaracteresEspeciales << pasarPalabrasAMinusculas << dividirPalabrasPorEspacios
 
 hacerComparableComoString : String -> String
-hacerComparableComoString = String.join " " << hacerComparableComoLista
+hacerComparableComoString = join " " << hacerComparableComoLista
 
 hacerListaDeStringsComparable : List String -> List String
 hacerListaDeStringsComparable = map hacerComparableComoString
@@ -59,11 +64,11 @@ peliculaTienePalabrasClave palabras pelicula = all (esCoincidenciaClave (hacerCo
 -- **************
 
 filtrarPeliculasPorGenero : String -> List Movie -> List Movie
-filtrarPeliculasPorGenero genero peliculas = if contains genero "suspenso" then peliculas
-                                             else filter (esPeliculaDeGenero genero) peliculas
+filtrarPeliculasPorGenero genero peliculas = if (genero /= "Genre" || genero /= "") then filter (esPeliculaDeGenero genero << .genre) peliculas
+                                             else peliculas
 
-esPeliculaDeGenero : String -> Movie -> Bool
-esPeliculaDeGenero genero pelicula = member genero pelicula.genre
+esPeliculaDeGenero : String -> List String -> Bool
+esPeliculaDeGenero genero generosDePelicula = member genero generosDePelicula
 
 -- **************
 -- Requerimiento: filtrar las películas que sean aptas para menores de edad,
@@ -104,6 +109,19 @@ darLikeAPelicula id = map (sumarLike id)
 volverACalcular : Movie -> Movie
 volverACalcular pelicula = {pelicula | matchPercentage = 0}
 
+perteneceARelacion : String -> ((String, String) -> String) -> (String, String) -> Bool
+perteneceARelacion genero primeroOSegundo relacion = genero == (primeroOSegundo relacion)
+
+buscarRelacionados : String -> (String, String) -> Bool
+buscarRelacionados genero relacion = (perteneceARelacion genero first relacion) || (perteneceARelacion genero second relacion)
+
+generoRelacionadoCon : String -> (String, String) -> String
+generoRelacionadoCon genero relacion = if (perteneceARelacion genero first relacion) then second relacion
+                                       else first relacion
+
+generosConLosQueSeRelaciona : String -> List String
+generosConLosQueSeRelaciona genero = ((map (generoRelacionadoCon genero)) << (filter (buscarRelacionados genero))) generosRelacionados
+
 comparacionConPreferencia : Int -> List String -> String -> Movie -> Movie
 comparacionConPreferencia porcentaje listaAComparar preferencia pelicula = if (member (hacerComparableComoString preferencia) (hacerListaDeStringsComparable listaAComparar)) then { pelicula | matchPercentage = pelicula.matchPercentage + porcentaje }
                                                                            else pelicula
@@ -116,12 +134,15 @@ compararGenero preferencias pelicula = comparacionConPreferencia 60 pelicula.gen
 compararTitulo : Preferences -> Movie -> Movie
 compararTitulo preferencias pelicula = foldr (comparacionConPreferencia 20 (dividirPalabrasPorEspacios pelicula.title)) pelicula (dividirPalabrasPorEspacios preferencias.keywords)
 
+compararGenerosRelacionados : Preferences -> Movie -> Movie
+compararGenerosRelacionados preferencias pelicula = foldr (comparacionConPreferencia 15 pelicula.genre) pelicula (generosConLosQueSeRelaciona preferencias.genre)
+
 maximoCien : Movie -> Movie --ex funcionDeAzul :c
 maximoCien pelicula = if pelicula.matchPercentage > 100 then {pelicula | matchPercentage = 100}
                       else pelicula
 
 porcentajeDeCoincidencia : Preferences -> Movie -> Movie
-porcentajeDeCoincidencia preferencias = maximoCien << (compararTitulo preferencias) << (compararGenero preferencias) << (compararActor preferencias)
+porcentajeDeCoincidencia preferencias = maximoCien << (compararTitulo preferencias) << (compararGenero preferencias) << (compararActor preferencias) << (compararGenerosRelacionados preferencias)
 
 calcularPorcentajeDeCoincidencia : Preferences -> List Movie -> List Movie
 calcularPorcentajeDeCoincidencia preferencias = (ordenarDescendientemente .matchPercentage) << (map ((porcentajeDeCoincidencia preferencias) << volverACalcular))

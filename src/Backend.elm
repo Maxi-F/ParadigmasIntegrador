@@ -22,8 +22,14 @@ esLetraONumero caracter = member caracter abecedarioYNumeros
 filtrarCaracteresEspeciales : List String -> List String
 filtrarCaracteresEspeciales = map (String.filter esLetraONumero)
 
-hacerComparable : String -> List String
-hacerComparable = filtrarCaracteresEspeciales << pasarPalabrasAMinusculas << dividirPalabrasPorEspacios
+hacerComparableComoLista : String -> List String
+hacerComparableComoLista = filtrarCaracteresEspeciales << pasarPalabrasAMinusculas << dividirPalabrasPorEspacios
+
+hacerComparableComoString : String -> String
+hacerComparableComoString = String.join " " << hacerComparableComoLista
+
+hacerListaDeStringsComparable : List String -> List String
+hacerListaDeStringsComparable = map hacerComparableComoString
 
 -- **************
 -- Requerimiento: filtrar películas por su título a medida que se escribe en el buscador;
@@ -42,23 +48,19 @@ filtrarPeliculasPorPalabrasClave palabras peliculas = if palabras /= "" then fil
 --
 
 esCoincidenciaClave : String -> String -> Bool
-esCoincidenciaClave palabraDelTitulo palabra = if palabra /= "" then contains palabra palabraDelTitulo
-                                               else False
---algunaEsPalabraClave : List String -> String -> Bool
---algunaEsPalabraClave palabras palabraDelTitulo = any (esPalabraclave palabraDelTitulo) palabras
-
-sonPalabrasClave : List String -> String -> Bool
-sonPalabrasClave palabras palabraDelTitulo = any (esCoincidenciaClave palabraDelTitulo) palabras
+esCoincidenciaClave titulo palabra = if palabra /= "" then contains palabra titulo
+                                     else True
 
 peliculaTienePalabrasClave : String -> Movie -> Bool
-peliculaTienePalabrasClave palabras pelicula = any (sonPalabrasClave (hacerComparable palabras)) (hacerComparable pelicula.title)
+peliculaTienePalabrasClave palabras pelicula = all (esCoincidenciaClave (hacerComparableComoString pelicula.title)) (hacerComparableComoLista palabras)
 
 -- **************
 -- Requerimiento: visualizar las películas según el género elegido en un selector;
 -- **************
 
 filtrarPeliculasPorGenero : String -> List Movie -> List Movie
-filtrarPeliculasPorGenero genero = filter (esPeliculaDeGenero genero)
+filtrarPeliculasPorGenero genero peliculas = if contains genero "suspenso" then peliculas
+                                             else filter (esPeliculaDeGenero genero) peliculas
 
 esPeliculaDeGenero : String -> Movie -> Bool
 esPeliculaDeGenero genero pelicula = member genero pelicula.genre
@@ -73,7 +75,7 @@ filtrarPeliculasPorMenoresDeEdad mostrarSoloMenores peliculas = if mostrarSoloMe
                                                                 else peliculas
 
 soloParaMenores : List Movie -> List Movie
-soloParaMenores = filter << pelicula.forKids
+soloParaMenores = filter .forKids
 
 -- **************
 -- Requerimiento: ordenar las películas por su rating;
@@ -103,7 +105,7 @@ volverACalcular : Movie -> Movie
 volverACalcular pelicula = {pelicula | matchPercentage = 0}
 
 comparacionConPreferencia : Int -> List String -> String -> Movie -> Movie
-comparacionConPreferencia porcentaje listaAComparar preferencia pelicula = if (member (toLower preferencia) (pasarPalabrasAMinusculas listaAComparar)) then { pelicula | matchPercentage = pelicula.matchPercentage + porcentaje }
+comparacionConPreferencia porcentaje listaAComparar preferencia pelicula = if (member (hacerComparableComoString preferencia) (hacerListaDeStringsComparable listaAComparar)) then { pelicula | matchPercentage = pelicula.matchPercentage + porcentaje }
                                                                            else pelicula
 compararActor : Preferences -> Movie -> Movie
 compararActor preferencias pelicula = comparacionConPreferencia 50 pelicula.actors preferencias.favoriteActor pelicula
@@ -116,7 +118,7 @@ compararTitulo preferencias pelicula = foldr (comparacionConPreferencia 20 (divi
 
 maximoCien : Movie -> Movie --ex funcionDeAzul :c
 maximoCien pelicula = if pelicula.matchPercentage > 100 then {pelicula | matchPercentage = 100}
-                         else pelicula
+                      else pelicula
 
 porcentajeDeCoincidencia : Preferences -> Movie -> Movie
 porcentajeDeCoincidencia preferencias = maximoCien << (compararTitulo preferencias) << (compararGenero preferencias) << (compararActor preferencias)

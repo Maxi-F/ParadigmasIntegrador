@@ -10,7 +10,7 @@ abecedarioYNumeros : List Char
 abecedarioYNumeros = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 generosRelacionados : List (String, String)
-generosRelacionados = [("Action", "Adventure"), ("Action", "Superhero"), ("Suspense", "Terror"), ("Action", "Terror")]
+generosRelacionados = [("Action", "Adventure"), ("Action", "Superhero"), ("Suspense", "Horror")]
 
 ordenarDescendientemente : (Movie -> comparable) -> List Movie -> List Movie
 ordenarDescendientemente criterio = reverse << (sortBy criterio)

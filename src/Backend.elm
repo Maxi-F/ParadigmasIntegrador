@@ -135,14 +135,15 @@ compararTitulo : Preferences -> Movie -> Movie
 compararTitulo preferencias pelicula = foldr (comparacionConPreferencia 20 (dividirPalabrasPorEspacios pelicula.title)) pelicula (dividirPalabrasPorEspacios preferencias.keywords)
 
 compararGenerosRelacionados : Preferences -> Movie -> Movie
-compararGenerosRelacionados preferencias pelicula = foldr (comparacionConPreferencia 15 pelicula.genre) pelicula (generosConLosQueSeRelaciona preferencias.genre)
+compararGenerosRelacionados preferencias pelicula = if pelicula.matchPercentage /= 60 then foldr (comparacionConPreferencia 15 pelicula.genre) pelicula (generosConLosQueSeRelaciona preferencias.genre) 
+                                                    else pelicula
 
-maximoCien : Movie -> Movie --ex funcionDeAzul :c
+maximoCien : Movie -> Movie
 maximoCien pelicula = if pelicula.matchPercentage > 100 then {pelicula | matchPercentage = 100}
                       else pelicula
 
 porcentajeDeCoincidencia : Preferences -> Movie -> Movie
-porcentajeDeCoincidencia preferencias = maximoCien << (compararTitulo preferencias) << (compararGenero preferencias) << (compararActor preferencias) << (compararGenerosRelacionados preferencias)
+porcentajeDeCoincidencia preferencias = maximoCien << (compararTitulo preferencias) << (compararActor preferencias) << (compararGenerosRelacionados preferencias) << (compararGenero preferencias)
 
 calcularPorcentajeDeCoincidencia : Preferences -> List Movie -> List Movie
 calcularPorcentajeDeCoincidencia preferencias = (ordenarDescendientemente .matchPercentage) << (map ((porcentajeDeCoincidencia preferencias) << volverACalcular))

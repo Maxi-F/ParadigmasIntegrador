@@ -19,7 +19,7 @@ navbar =
     a [ class "navbar-brand", href "#" ] [ text "PdeP-Flix" ],
       Form.formInline [Styles.navbarText] [
         Checkbox.custom [ Checkbox.id "kids", Checkbox.inline, Checkbox.onCheck KidsFilter ] "Kids Protection",
-        Select.select [Select.onChange ChangeGenre] (List.map genreOption ["Genre", "terror", "suspenso"]),
+        Select.select [Select.onChange ChangeGenre] (List.map genreOption ["Genre", "Action", "Adventure", "Animated", "Family", "Horror", "Superhero", "Suspense"]),
         Input.text [ Input.attrs [class "mx-sm-3", placeholder "filter movies", onInput FilterName ]
       ] 
    ]
